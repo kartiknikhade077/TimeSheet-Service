@@ -6,12 +6,12 @@ public class Company {
 	
 
 
-	private Long companyId;
+	private String companyId;
 	private int userId;
 	private String companyName;
 	private String companyEmail;
 	private String companyDescription;
-	public Company(long companyId, int userId, String companyName, String companyEmail, String companyDescription) {
+	public Company(String companyId, int userId, String companyName, String companyEmail, String companyDescription) {
 		super();
 		this.companyId = companyId;
 		this.userId = userId;
@@ -24,10 +24,10 @@ public class Company {
 		// TODO Auto-generated constructor stub
 	}
 	
-	public long getCompanyId() {
+	public String getCompanyId() {
 		return companyId;
 	}
-	public void setCompanyId(long companyId) {
+	public void setCompanyId(String companyId) {
 		this.companyId = companyId;
 	}
 	public int getUserId() {
