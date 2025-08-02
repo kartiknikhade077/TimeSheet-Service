@@ -2,6 +2,7 @@ package com.project.repository;
 
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,21 +40,25 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, String> {
     		    Pageable pageable
     		);
      
-     @Query("SELECT t FROM TimeSheet t " +
-    	       "WHERE t.companyId = :companyId " +
-    	       "AND (:designer IS NULL OR LOWER(t.designerName) LIKE LOWER(CONCAT('%', :designer, '%'))) " +
-    	       "AND (:startDate IS NULL OR t.createDate >= :startDate) " +
-    	       "AND (:endDate IS NULL OR t.createDate <= :endDate) " +
-    	       "AND (:itemNumber IS NULL OR t.itemNumber = :itemNumber) " +
-    	       "AND (:workOrderNo IS NULL OR t.workOrderNo = :workOrderNo)")
-    	Page<TimeSheet> searchTimeSheets(
-    	        @Param("companyId") String companyId,
-    	        @Param("designer") String designer,
-    	        @Param("startDate") LocalDate startDate,
-    	        @Param("endDate") LocalDate endDate,
-    	        @Param("itemNumber") Integer itemNumber,
-    	        @Param("workOrderNo") String workOrderNo,
-    	        Pageable pageable);
+     List<TimeSheet> findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
+ 		    String companyId,
+ 		    String designerName,
+ 		    String workOrderNo,
+ 		    LocalDate startDate,
+ 		    LocalDate endDate
+ 		);
+     
+     List<TimeSheet> findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetweenAndItemNumber(
+ 		    String companyId,
+ 		    String designerName,
+ 		    String workOrderNo,
+ 		    LocalDate startDate,
+ 		    LocalDate endDate,
+ 		    Integer itemNumber
+ 		   
+ 		);
 
+     
+   
 
 }

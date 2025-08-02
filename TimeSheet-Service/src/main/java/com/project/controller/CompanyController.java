@@ -1,10 +1,14 @@
 package com.project.controller;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,6 +32,8 @@ import com.project.client.UserSerivceClinet;
 import com.project.dto.Company;
 import com.project.entity.TimeSheet;
 import com.project.repository.TimeSheetRepository;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/timesheet")
@@ -172,38 +178,73 @@ public class CompanyController {
 		}
 	}
 
-//	@GetMapping("/getAllTimeSheets/{page}/{size}")
-//	public ResponseEntity<?> getAllProjects(
-//	        @PathVariable int page,
-//	        @PathVariable int size,
-//	        @RequestParam(defaultValue = "") String designer,
-//	        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-//	        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-//	        @RequestParam(required = false) Integer itemNumber,
-//	        @RequestParam(required = false) String workOrderNo
-//	) {
-//	    try {
-//	        Pageable pageable = PageRequest.of(page, size, Sort.by("timeSheetId").descending());
-//
-//	        Page<TimeSheet> timeSheetPage = timeSheetRepository.searchTimeSheets(
-//	                String.valueOf(company.getCompanyId()),
-//	                designer != null ? designer : "",
-//	                startDate,
-//	                endDate,
-//	                itemNumber,
-//	                workOrderNo != null ? workOrderNo : "",
-//	                pageable
-//	        );
-//
-//	        Map<String, Object> data = new HashMap<>();
-//	        data.put("timeSheetList", timeSheetPage.getContent());
-//	        data.put("totalPages", timeSheetPage.getTotalPages());
-//	        data.put("currentPage", timeSheetPage.getNumber());
-//	        return ResponseEntity.ok(data);
-//	    } catch (Exception e) {
-//	        e.printStackTrace();
-//	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
-//	    }
-//	}
+	@GetMapping("/exportTimeSheet")
+	public void exportTimeSheetToExcel(HttpServletResponse response,
+			@RequestParam(defaultValue = "") String designer,@RequestParam(defaultValue = "") String workOrderNumber,
+			 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+		        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+		        @RequestParam(required = false) Integer itemNumber
+			) throws IOException {
+	    response.setContentType("application/octet-stream");
+	    String headerKey = "Content-Disposition";
+	    String headerValue = "attachment; filename=timesheets.xlsx";
+	    response.setHeader(headerKey, headerValue);
+	    
+	    
+	    LocalDate from = (startDate != null) ? startDate : LocalDate.of(1900, 1, 1);
+		LocalDate to = (endDate != null) ? endDate : LocalDate.now();
+		List<TimeSheet> timeSheetList=null;
+		if (itemNumber == null) {
+
+			timeSheetList = timeSheetRepository
+				        .findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
+				            String.valueOf(company.getCompanyId()),
+				            designer != null ? designer : "",
+				            workOrderNumber != null ? workOrderNumber : "",
+				            from,
+				            to
+				          );
+			
+		}
+		else {
+
+			timeSheetList = timeSheetRepository
+					.findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetweenAndItemNumber(
+							String.valueOf(company.getCompanyId()), designer != null ? designer : "", workOrderNumber != null ? workOrderNumber : "", from, to,
+							itemNumber);
+
+		}
+
+
+	//    List<TimeSheet> timeSheets = timeSheetRepository.findAll(); // You can add filters if needed
+
+	    XSSFWorkbook workbook = new XSSFWorkbook();
+	    XSSFSheet sheet = workbook.createSheet("TimeSheets");
+
+	    // Header Row
+	    Row headerRow = sheet.createRow(0);
+	    String[] headers = { "Create Date ","Item No","Work Order No", "Designer Name","From Time","To Time","Total Time","Remarks"  };
+	    for (int i = 0; i < headers.length; i++) {
+	        headerRow.createCell(i).setCellValue(headers[i]);
+	    }
+
+	    // Data Rows
+	    int rowIndex = 1;
+	    for (TimeSheet ts : timeSheetList) {
+	        Row row = sheet.createRow(rowIndex++);
+	        row.createCell(0).setCellValue(ts.getCreateDate() != null ? ts.getCreateDate().toString() : "");
+	        row.createCell(1).setCellValue(ts.getItemNumber());
+	        row.createCell(2).setCellValue(ts.getWorkOrderNo());
+	        row.createCell(3).setCellValue(ts.getDesignerName());
+	        row.createCell(4).setCellValue(ts.getStartTime());
+	        row.createCell(5).setCellValue(ts.getEndTime());
+	        row.createCell(6).setCellValue(ts.getTotalTime());
+	        row.createCell(7).setCellValue(ts.getRemarks() != null ? ts.getRemarks() : "");
+	    }
+
+	    workbook.write(response.getOutputStream());
+	    workbook.close();
+	}
+
 
 }
