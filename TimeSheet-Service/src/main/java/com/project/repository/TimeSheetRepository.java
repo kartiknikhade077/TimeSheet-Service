@@ -7,9 +7,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.project.entity.TimeSheet;
 @Repository
@@ -59,6 +61,12 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, String> {
  		);
 
      
-   
+     @Modifying
+     @Transactional
+     @Query("UPDATE TimeSheet t SET t.processStatus = :processStatus WHERE t.workOrderNo = :workOrderNo")
+     int updateWorkOrderStatus(
+             @Param("workOrderNo") String workOrderNo,
+             @Param("processStatus") boolean processStatus
+     );
 
 }

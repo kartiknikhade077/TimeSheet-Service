@@ -5,7 +5,13 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -185,6 +191,8 @@ public class CompanyController {
 		        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
 		        @RequestParam(required = false) Integer itemNumber
 			) throws IOException {
+		
+		try {
 	    response.setContentType("application/octet-stream");
 	    String headerKey = "Content-Disposition";
 	    String headerValue = "attachment; filename=timesheets.xlsx";
@@ -227,24 +235,79 @@ public class CompanyController {
 	    for (int i = 0; i < headers.length; i++) {
 	        headerRow.createCell(i).setCellValue(headers[i]);
 	    }
+	    
+	 // Create styles for red background + strikethrough
+	    CellStyle redStrikeThroughStyle = workbook.createCellStyle();
+	    redStrikeThroughStyle.setFillForegroundColor(IndexedColors.RED.getIndex());
+	    redStrikeThroughStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+	    Font strikeFont = workbook.createFont();
+	    strikeFont.setStrikeout(true);
+	    strikeFont.setColor(IndexedColors.WHITE.getIndex()); // White text for contrast
+	    redStrikeThroughStyle.setFont(strikeFont);
+
+	    // Create normal style (optional, for other rows)
+	    CellStyle normalStyle = workbook.createCellStyle();
+	    Font normalFont = workbook.createFont();
+	    normalFont.setStrikeout(false);
+	    normalStyle.setFont(normalFont);
+
 
 	    // Data Rows
 	    int rowIndex = 1;
+	    Double totalTime=0.0;
 	    for (TimeSheet ts : timeSheetList) {
-	        Row row = sheet.createRow(rowIndex++);
-	        row.createCell(0).setCellValue(ts.getCreateDate() != null ? ts.getCreateDate().toString() : "");
-	        row.createCell(1).setCellValue(ts.getItemNumber());
-	        row.createCell(2).setCellValue(ts.getWorkOrderNo());
-	        row.createCell(3).setCellValue(ts.getDesignerName());
-	        row.createCell(4).setCellValue(ts.getStartTime());
-	        row.createCell(5).setCellValue(ts.getEndTime());
-	        row.createCell(6).setCellValue(ts.getTotalTime());
-	        row.createCell(7).setCellValue(ts.getRemarks() != null ? ts.getRemarks() : "");
+	    	Row row = sheet.createRow(rowIndex++);
+
+	        boolean isCancelled = ts.isProcessStatus(); // processStatus == true
+
+	        // Helper to set cell with style
+	        BiConsumer<Integer, String> setCell = (colIndex, value) -> {
+	            Cell cell = row.createCell(colIndex);
+	            cell.setCellValue(value != null ? value : "");
+	            cell.setCellStyle(isCancelled ? redStrikeThroughStyle : normalStyle);
+	        };
+
+	        setCell.accept(0, ts.getCreateDate() != null ? ts.getCreateDate().toString() : "");
+	        setCell.accept(1, String.valueOf(ts.getItemNumber()));
+	        setCell.accept(2, ts.getWorkOrderNo());
+	        setCell.accept(3, ts.getDesignerName());
+	        setCell.accept(4, ts.getStartTime() != null ? ts.getStartTime().toString() : "");
+	        setCell.accept(5, ts.getEndTime() != null ? ts.getEndTime().toString() : "");
+	        setCell.accept(6, String.valueOf(ts.getTotalTime()));
+	        setCell.accept(7, ts.getRemarks());
+	        
+	        totalTime=totalTime+ts.getTotalTime();
 	    }
+	    double roundedTotalTime = Math.round(totalTime * 100.0) / 100.0;
+	    Row row = sheet.createRow(rowIndex++);
+	    row.createCell(5).setCellValue("Total Time");
+	    row.createCell(6).setCellValue(roundedTotalTime +" Hrs");
 
 	    workbook.write(response.getOutputStream());
 	    workbook.close();
+	    
+		}catch(Exception e) {
+			
+			e.printStackTrace();
+			
+		}
 	}
+	
+	
+	@PutMapping("/updateWorkOrderStaus/{workOrder}/{status}")
+	public ResponseEntity<?> updateWorkOrderStaus(@PathVariable String workOrder,@PathVariable boolean status) {
+		try {
+		     timeSheetRepository.updateWorkOrderStatus(workOrder, status);
+			return ResponseEntity.ok("Status Updated");
+		} catch (Exception e) {
+
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body("Error creating employee: " + e.getMessage());
+		}
+	}
+	
 
 
 }

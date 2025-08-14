@@ -24,6 +24,7 @@ public class TimeSheet {
 	private double totalTime;
 	private String remarks;
 	private LocalDate createDate;
+	private boolean processStatus;
 	public TimeSheet(String timeSheetId, String companyId, String employeeId, int itemNumber, String workOrderNo,
 			String designerName, Time startTime, Time endTime, double totalTime, String remarks) {
 		super();
@@ -107,6 +108,12 @@ public class TimeSheet {
 	}
 	public void setCreateDate(LocalDate createDate) {
 		this.createDate = createDate;
+	}
+	public boolean isProcessStatus() {
+		return processStatus;
+	}
+	public void setProcessStatus(boolean processStatus) {
+		this.processStatus = processStatus;
 	}
 	
 	
