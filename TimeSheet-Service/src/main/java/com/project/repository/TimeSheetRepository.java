@@ -32,6 +32,16 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, String> {
     		    Pageable pageable
     		);
      
+     Page<TimeSheet> findByEmployeeIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetweenAndItemNumber(
+ 		    String employeeId,
+ 		    String designerName,
+ 		    String workOrderNo,
+ 		    LocalDate startDate,
+ 		    LocalDate endDate,
+ 		    Integer itemNumber,
+ 		    Pageable pageable
+ 		);
+     
      
      Page<TimeSheet> findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
     		    String companyId,
@@ -41,6 +51,14 @@ public interface TimeSheetRepository extends JpaRepository<TimeSheet, String> {
     		    LocalDate endDate,
     		    Pageable pageable
     		);
+     Page<TimeSheet> findByEmployeeIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
+ 		    String employeeId,
+ 		    String designerName,
+ 		    String workOrderNo,
+ 		    LocalDate startDate,
+ 		    LocalDate endDate,
+ 		    Pageable pageable
+ 		);
      
      List<TimeSheet> findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
  		    String companyId,

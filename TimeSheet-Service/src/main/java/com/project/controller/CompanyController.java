@@ -36,6 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.client.UserSerivceClinet;
 import com.project.dto.Company;
+import com.project.dto.Employee;
+import com.project.dto.ModuleAccess;
+import com.project.dto.User;
 import com.project.entity.TimeSheet;
 import com.project.repository.TimeSheetRepository;
 
@@ -52,11 +55,21 @@ public class CompanyController {
 	private TimeSheetRepository timeSheetRepository;
 
 	Company company;
+	User user;
+	Employee employee;
+	ModuleAccess moduleAccess;
 
 	@ModelAttribute
-	public void companyDetails() {
+	public void getUserInfo() {
 
-		company = userSerivceClinet.getCompanyInfo();
+		user = userSerivceClinet.getUserInfo();
+		moduleAccess =userSerivceClinet.getModuleAccessInfo();
+		if(user.getRole().equalsIgnoreCase("ROLE_COMPANY")) {
+			
+			company = userSerivceClinet.getCompanyInfo();
+		}else {
+			employee=userSerivceClinet.getEmployeeInfo();
+		}
 
 	}
 
@@ -65,7 +78,12 @@ public class CompanyController {
 
 		try {
 
-			timesheet.setCompanyId(String.valueOf(company.getCompanyId()));
+			if (user.getRole().equalsIgnoreCase("ROLE_COMPANY")) {
+				timesheet.setCompanyId(company.getCompanyId());
+			} else {
+				timesheet.setEmployeeId(employee.getEmployeeId());
+				timesheet.setCompanyId(employee.getCompanyId());
+			}
 
 			timeSheetRepository.save(timesheet);
 
@@ -85,7 +103,12 @@ public class CompanyController {
 
 		try {
 
-			timesheet.setCompanyId(String.valueOf(company.getCompanyId()));
+			if (user.getRole().equalsIgnoreCase("ROLE_COMPANY")) {
+				timesheet.setCompanyId(company.getCompanyId());
+			} else {
+				timesheet.setEmployeeId(employee.getEmployeeId());
+				timesheet.setCompanyId(employee.getCompanyId());
+			}
 
 			timeSheetRepository.save(timesheet);
 
@@ -149,27 +172,61 @@ public class CompanyController {
 			List<TimeSheet> timeSheetList=null;
 			Page<TimeSheet> timeSheetPage=null;
 			if (itemNumber == null) {
-
+				if(user.getRole().equalsIgnoreCase("ROLE_COMPANY")) {
 				 timeSheetPage = timeSheetRepository
 					        .findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
-					            String.valueOf(company.getCompanyId()),
+					            company.getCompanyId(),
 					            designer != null ? designer : "",
 					            workOrderNumber != null ? workOrderNumber : "",
 					            from,
 					            to,
 					            pageable
 					        );
+				}else if(moduleAccess.isTimeSheetViewAll()) {
+					 timeSheetPage = timeSheetRepository
+						        .findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
+						            employee.getCompanyId(),
+						            designer != null ? designer : "",
+						            workOrderNumber != null ? workOrderNumber : "",
+						            from,
+						            to,
+						            pageable
+						        );	
+				}else {
+					 timeSheetPage = timeSheetRepository
+						        .findByEmployeeIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetween(
+						            employee.getEmployeeId(),
+						            designer != null ? designer : "",
+						            workOrderNumber != null ? workOrderNumber : "",
+						            from,
+						            to,
+						            pageable
+						        );
+				}
 				timeSheetList = timeSheetPage.getContent();
 			}
 
 			else {
-
+				if(user.getRole().equalsIgnoreCase("ROLE_COMPANY")) {
 				timeSheetPage = timeSheetRepository
 						.findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetweenAndItemNumber(
-								String.valueOf(company.getCompanyId()), designer != null ? designer : "", workOrderNumber != null ? workOrderNumber : "", from, to,
+								company.getCompanyId(), designer != null ? designer : "", workOrderNumber != null ? workOrderNumber : "", from, to,
 								itemNumber, pageable);
+				
+				}else if(moduleAccess.isTimeSheetViewAll()) {
+					
+					timeSheetPage = timeSheetRepository
+							.findByCompanyIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetweenAndItemNumber(
+									employee.getCompanyId(), designer != null ? designer : "", workOrderNumber != null ? workOrderNumber : "", from, to,
+									itemNumber, pageable);
+				}else {
+					
+					timeSheetPage = timeSheetRepository
+							.findByEmployeeIdAndDesignerNameContainingIgnoreCaseAndWorkOrderNoContainingIgnoreCaseAndCreateDateBetweenAndItemNumber(
+									employee.getEmployeeId(), designer != null ? designer : "", workOrderNumber != null ? workOrderNumber : "", from, to,
+									itemNumber, pageable);
+				}
 				timeSheetList = timeSheetPage.getContent();
-
 			}
 
 			data.put("timeSheetList", timeSheetList);
